@@ -210,6 +210,7 @@ int readPoly(int coeff[], int degree)
 void printPoly(int coeff[], int degree)
 {
     int i;
+    int absoluteCoeff;
     char operator = '+';
     if (coeff[degree] == 1)
         printf("x^%d", degree);
@@ -220,40 +221,67 @@ void printPoly(int coeff[], int degree)
             operator = '-';
         else
             operator = '+';
-        coeff[i] = abs(coeff[i]);
-        if (coeff[i] == 0)
+        absoluteCoeff = abs(coeff[i]);
+        if (absoluteCoeff == 0)
             continue;
-        else if (coeff[i] == 1)
+        else if (absoluteCoeff == 1)
             if (i == 1)
                 printf(" %c x", operator);
             else
                 printf(" %c x^%d", operator, i);
         else if (i==1)
-            printf(" %c %dx", operator, coeff[i]);
+            printf(" %c %dx", operator, absoluteCoeff);
         else if (i==0)
-            printf(" %c %d", operator, coeff[i]);
+            printf(" %c %d", operator, absoluteCoeff);
         else
-            printf(" %c %dx^%d", operator, coeff[i], i);
+            printf(" %c %dx^%d", operator, absoluteCoeff, i);
     }
     printf("\n"); //****GET RID OF BEFORE SUBMITTING***
     return;
 }
 
+
 /* function header */
 double evalPoly(int *coeff, int degree, double x)
 {
-    return 0;
+    int i;
+    double sum = 0.0;
+    for (i=0; i<=degree; i++){
+        printf("coeff: %d\n", coeff[i]);
+        printf("num: %f\n", coeff[i] * pow(x,i));
+        sum += coeff[i] * pow(x, i);
+    }
+
+    return sum;
 }
 
 /* function header */
 double integratePoly(int *coeff, int degree, double low, double high)
 {
-    return 0;
+    int i;
+    double sum = 0.0;
+    for(i=0; i<=degree; i++) {
+        sum += coeff[i] * ((pow(high, i+1)-pow(low, i+1))/(i+1));
+    }
+
+    return sum;
 }
 
 /* function header */
 int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
 {
+    int i;
+    int j;
+    int deg;
+    for(i=0; i<=d1; i++) {
+        for(j=0; j<=d2; j++) {
+            deg = i+j;
+            if (c3[deg] == 0)
+                c3[deg] = c1[i] * c2[j];
+            else
+                c3[deg] *= c1[i] * c2[j];
+        }
+    }
     return 1;
 }
 

@@ -9,7 +9,7 @@
 #include<string.h>
 #include<stdbool.h>
 #include<ctype.h>
-
+#include<math.h>
 
 int getNum(char c) {
     return ((int) c) - 48;
@@ -91,6 +91,7 @@ void testSTRTOK() {
 void printPoly(int coeff[], int degree)
 {
     int i;
+    int absoluteCoeff;
     char operator = '+';
     if (coeff[degree] == 1)
         printf("x^%d", degree);
@@ -101,29 +102,54 @@ void printPoly(int coeff[], int degree)
             operator = '-';
         else
             operator = '+';
-        coeff[i] = abs(coeff[i]);
-        if (coeff[i] == 0)
+        absoluteCoeff = abs(coeff[i]);
+        if (absoluteCoeff == 0)
             continue;
-        else if (coeff[i] == 1)
+        else if (absoluteCoeff == 1)
             if (i == 1)
                 printf(" %c x", operator);
             else
                 printf(" %c x^%d", operator, i);
         else if (i==1)
-            printf(" %c %dx", operator, coeff[i]);
+            printf(" %c %dx", operator, absoluteCoeff);
         else if (i==0)
-            printf(" %c %d", operator, coeff[i]);
+            printf(" %c %d", operator, absoluteCoeff);
         else
-            printf(" %c %dx^%d", operator, coeff[i], i);
+            printf(" %c %dx^%d", operator, absoluteCoeff, i);
     }
     printf("\n"); //****GET RID OF BEFORE SUBMITTING***
     return;
+}
+
+double evalPoly(int *coeff, int degree, double x)
+{
+    int i;
+    double sum = 0.0;
+    for (i=0; i<=degree; i++){
+        printf("coeff: %d\n", coeff[i]);
+        printf("num: %f\n", coeff[i] * pow(x,i));
+        sum += coeff[i] * pow(x, i);
+    }
+
+    return sum;
+}
+
+double integratePoly(int *coeff, int degree, double low, double high)
+{
+    int i;
+    double sum = 0.0;
+    for(i=0; i<=degree; i++) {
+        sum += coeff[i] * ((pow(high, i+1)-pow(low, i+1))/(i+1));
+    }
+    printf("integral: %f\n", sum);
+    return sum;
 }
 
 int main() {
     int coeff[5] = {-4, 2, -3, 0, -1};
     int degree = 4;
     printPoly(coeff, degree);
+    integratePoly(coeff, degree, 3, 5);
 
     return 0;
 }
