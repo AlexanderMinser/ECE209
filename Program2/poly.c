@@ -161,7 +161,17 @@ int main()
 
 
 
-/* function header */
+/* Function for reading in polynomial provided by user at command line
+*  entire polynomial is read in as string
+*  then split up using strtok on spaces
+*
+*
+*  PARAMETERS:
+*  int coeff[] ---> array of coefficients corresponding to their "degree" (index)
+*  int degree ---> the highest degree of the given polynomial (largest index in array)
+*  RETURN:
+*  integer value 0 or 1 indicating success or failure accordingly
+*/
 //***Don't forget to check if polynomial is valid
 int readPoly(int coeff[], int degree)
 {
@@ -192,7 +202,7 @@ int readPoly(int coeff[], int degree)
         } else if (*token == 'x') {
             cof = isNeg? -1 : 1;
             isNeg = 0;
-            if (*(token+1) == '^')
+            if (*(token+1) == '^') //***THIS WONT WORK FOR DEGREES LARGER THAN 9***
                 deg = (*(token + 2)) - '0';
             else
                 deg = 1;
@@ -206,7 +216,18 @@ int readPoly(int coeff[], int degree)
 
     return 1;
 }
-/* function header */
+
+/* Function for printing a given polynomial
+*  First prints highest degree term in polynomial,
+*  then iterates through coefficient array printing the remaining terms of
+*  the polynomial, making various checks along the way to assure proper formatting
+*
+*  PARAMETERS:
+*  int coeff[] ---> array of coefficients corresponding to their "degree" (index)
+*  int degree ---> the highest degree of the given polynomial (largest index in array)
+*  RETURN:
+*  nothing, function only performs outuput
+*/
 void printPoly(int coeff[], int degree)
 {
     int i;
@@ -241,21 +262,41 @@ void printPoly(int coeff[], int degree)
 }
 
 
-/* function header */
+/* Evalutes a polynomial at a given value for x
+*  by raising that value of x to the degree and
+*  multiplying that by it's corresponding coefficient
+*
+*  PARAMETERS:
+*  int *coeff ---> array of coefficients corresponding to their "degree" (index)
+*  int degree ---> the highest degree of the given polynomial (largest index in array)
+*  double x ---> value to sub in for x in polynomial
+*  RETURN:
+*  sum of polynomial terms evaluated at given x
+*/
 double evalPoly(int *coeff, int degree, double x)
 {
     int i;
     double sum = 0.0;
     for (i=0; i<=degree; i++){
-        printf("coeff: %d\n", coeff[i]);
-        printf("num: %f\n", coeff[i] * pow(x,i));
         sum += coeff[i] * pow(x, i);
     }
 
     return sum;
 }
 
-/* function header */
+/* function integrates given polynomial between bounds low and high
+*  uses integration formula: sum a[i](v^(i+1)-u^(i+1))/(i+1)
+*  where i is index, v is upper bound, u is lower bound, and
+*  a is coefficient
+*
+*  PARAMETERS:
+*  int *coeff ---> array of coefficients corresponding to their "degree" (index)
+*  int degree ---> the highest degree of the given polynomial (largest index in array)
+*  double low ---> low bound of integration
+*  double high ---> high bound of integration
+*  RETURN:
+*  value of integration taken at bounds low and high
+*/
 double integratePoly(int *coeff, int degree, double low, double high)
 {
     int i;
@@ -267,19 +308,23 @@ double integratePoly(int *coeff, int degree, double low, double high)
     return sum;
 }
 
-/* function header */
+/* function header
+*  function multiplies two polynomials together
+*  function uses nested loops to multiply each term together
+*  and store in correct place in array given by degree
+*/
 int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
 {
     int i;
     int j;
-    int deg;
+    int deg; //current degree after any given multiplication b/w terms
     for(i=0; i<=d1; i++) {
         for(j=0; j<=d2; j++) {
             deg = i+j;
             if (c3[deg] == 0)
                 c3[deg] = c1[i] * c2[j];
             else
-                c3[deg] *= c1[i] * c2[j];
+                c3[deg] += c1[i] * c2[j];
         }
     }
     return 1;

@@ -145,11 +145,45 @@ double integratePoly(int *coeff, int degree, double low, double high)
     return sum;
 }
 
+int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
+{
+    int i;
+    int j;
+    int deg;
+    for(i=0; i<=d3; i++) {
+        c3[i] = 0;
+    }
+    for(i=0; i<=d1; i++) {
+        for(j=0; j<=d2; j++) {
+            deg = i+j;
+            if (c3[deg] == 0)
+                c3[deg] = c1[i] * c2[j];
+            else
+                c3[deg] += c1[i] * c2[j];
+        }
+    }
+    return 1;
+}
+
+int genPoly(int c[], int d, int r[], int n)
+{
+    int i;
+    for(i=0; i<=)
+    return 1;
+}
+
+
 int main() {
+
     int coeff[5] = {-4, 2, -3, 0, -1};
     int degree = 4;
+    int coeff1[4] = {3, 2, 1, -1};
+    int degree1 = 3;
+    int coeff2[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int degree2 = 7;
     printPoly(coeff, degree);
-    integratePoly(coeff, degree, 3, 5);
-
+    printPoly(coeff1, degree1);
+    multPoly(coeff, degree, coeff1, degree1, coeff2, degree2);
+    printPoly(coeff2, degree2);
     return 0;
 }
