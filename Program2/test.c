@@ -21,22 +21,33 @@ int readPoly(int coeff[], int degree)
 {
     char input[100];
     fgets(input, 100, stdin);
-    char* token = strtok(input, " ");
-    char* temp;
-    int deg;
-    int cof;
+    char* token = strtok(input, " "); /* string split on ' ' */
+    char* temp;                       /* holds rest of string after strtoul */
+    int deg;                          /* degree of term currently being parsed */
+    int cof;                          /* coefficient of term currently being parsed */
     int isNeg = 0;
     int i;
     for(i=0; i<=degree; i++) {
         coeff[i] = 0;
     }
     while(token != NULL) {
-        if (isdigit(*token)){
+        if (isdigit(*(token+1)) && (*token) == '-') { // is first term and negative
+            cof = strtoul(token, &temp, 10);
+            if (temp[1] == '^'){
+                    deg = strtoul((temp+2), &temp, 10);
+            } else if (temp[0] == 'x'){
+                deg = 1;
+            } else {
+                deg = 0;
+            }
+            coeff[deg] = cof;
+        }
+        else if (isdigit(*token)){
             cof = strtoul(token, &temp, 10);
             cof = isNeg? -1 * cof : cof;
             isNeg = 0;
             if (temp[1] == '^'){
-                    deg = temp[2] - '0';
+                    deg = strtoul((temp+2), &temp, 10);
             } else if (temp[0] == 'x'){
                 deg = 1;
             } else {
@@ -47,7 +58,7 @@ int readPoly(int coeff[], int degree)
             cof = isNeg? -1 : 1;
             isNeg = 0;
             if (*(token+1) == '^')
-                deg = (*(token + 2)) - '0';
+                deg = strtoul((token + 2), &temp, 10);
             else
                 deg = 1;
             coeff[deg] = cof;
@@ -95,7 +106,7 @@ void printPoly(int coeff[], int degree)
     char operator = '+';
     if (coeff[degree] == 1)
         printf("x^%d", degree);
-    else
+    else if (coeff[degree] != 0)
         printf("%dx^%d", coeff[degree], degree);
     for(i=degree-1; i>-1; i--) {
         if (coeff[i] < 0)
@@ -108,6 +119,8 @@ void printPoly(int coeff[], int degree)
         else if (absoluteCoeff == 1)
             if (i == 1)
                 printf(" %c x", operator);
+            else if (i == 0)
+                printf(" %c 1", operator);
             else
                 printf(" %c x^%d", operator, i);
         else if (i==1)
@@ -117,7 +130,6 @@ void printPoly(int coeff[], int degree)
         else
             printf(" %c %dx^%d", operator, absoluteCoeff, i);
     }
-    printf("\n"); //****GET RID OF BEFORE SUBMITTING***
     return;
 }
 
@@ -149,7 +161,9 @@ int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
 {
     int i;
     int j;
-    int deg;
+    int deg; /*current degree after any given multiplication b/w terms */
+    if (d1+d2 > d3)
+        return 1; /*error handling, product polynomial of too high degree */
     for(i=0; i<=d3; i++) {
         c3[i] = 0;
     }
@@ -162,27 +176,40 @@ int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
                 c3[deg] += c1[i] * c2[j];
         }
     }
-    return 1;
+    return 0;
 }
 
 int genPoly(int c[], int d, int r[], int n)
 {
     int i;
-    for(i=0; i<=)
-    return 1;
+    int j;
+    int last; /*least significant term coefficient*/
+    if (d < n)
+        return 1; /*error handling, product polynomial of too high degree */
+    for (i=0; i<=d; i++) { /*set all values in new array to zero*/
+        c[i] = 0;
+    }
+    c[1] = 1;
+    c[0] = (-1*r[0]);
+    for (i=1; i<n; i++) { /*foil terms*/
+        last = c[0]*(-1*r[i]);
+        for(j=i; j>=0; j--) {
+            c[j+1] = c[j] + c[j+1]*(-1*r[i]);
+        }
+        c[0] = last;
+    }
+    return 0;
 }
 
 
 int main() {
 
-    int coeff[5] = {-4, 2, -3, 0, -1};
-    int degree = 4;
-    int coeff1[4] = {3, 2, 1, -1};
-    int degree1 = 3;
-    int coeff2[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    int degree2 = 7;
-    printPoly(coeff, degree);
-    printPoly(coeff1, degree1);
+    int coeff[4] = {0, 2, -3, 7};
+    int degree = 3;
+    int coeff1[3] = {3, -4, 2};
+    int degree1 = 2;
+    int coeff2[6];
+    int degree2 = 5;
     multPoly(coeff, degree, coeff1, degree1, coeff2, degree2);
     printPoly(coeff2, degree2);
     return 0;

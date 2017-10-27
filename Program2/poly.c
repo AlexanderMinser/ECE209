@@ -1,12 +1,18 @@
 /*
- * Header goes here
+ * Alexander Minser
+ * ECE 209 Spring 2017
+ * Professor Sanders
+ * 10/27/2017
+ * Program peforms various operations dealing with polynomials
+ * Functions implemented include reading, printing, evaluating, integrating,
+ * multiplying, and generating polynomials
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include<ctype.h>
+#include <ctype.h>
 
 /* functions to be implemented */
 int readPoly(int coeff[], int degree);
@@ -172,27 +178,41 @@ int main()
 *  RETURN:
 *  integer value 0 or 1 indicating success or failure accordingly
 */
-//***Don't forget to check if polynomial is valid
 int readPoly(int coeff[], int degree)
 {
     char input[100];
     fgets(input, 100, stdin);
-    char* token = strtok(input, " ");
-    char* temp;
-    int deg;
-    int cof;
+    char* token = strtok(input, " "); /* string split on ' ' */
+    char* temp;                       /* holds rest of string after strtoul */
+    int deg;                          /* degree of term currently being parsed */
+    int cof;                          /* coefficient of term currently being parsed */
     int isNeg = 0;
     int i;
     for(i=0; i<=degree; i++) {
         coeff[i] = 0;
     }
     while(token != NULL) {
-        if (isdigit(*token)){
+        if (isdigit(*(token+1)) && (*token) == '-') { /* if first term and negative */
+            cof = strtoul(token, &temp, 10);
+            if (temp[1] == '^'){
+                    deg = strtoul((temp+2), &temp, 10);
+                    if (deg > degree)
+                        return 1; /*error handling, input polynomial of too high degree */
+            } else if (temp[0] == 'x'){
+                deg = 1;
+            } else {
+                deg = 0;
+            }
+            coeff[deg] = cof;
+        }
+        else if (isdigit(*token)){
             cof = strtoul(token, &temp, 10);
             cof = isNeg? -1 * cof : cof;
             isNeg = 0;
             if (temp[1] == '^'){
-                    deg = temp[2] - '0';
+                    deg = strtoul((temp+2), &temp, 10);
+                    if (deg > degree)
+                        return 1; /*error handling, input polynomial of too high degree */
             } else if (temp[0] == 'x'){
                 deg = 1;
             } else {
@@ -202,8 +222,10 @@ int readPoly(int coeff[], int degree)
         } else if (*token == 'x') {
             cof = isNeg? -1 : 1;
             isNeg = 0;
-            if (*(token+1) == '^') //***THIS WONT WORK FOR DEGREES LARGER THAN 9***
-                deg = (*(token + 2)) - '0';
+            if (*(token+1) == '^')
+                deg = strtoul((token + 2), &temp, 10);
+                if (deg > degree)
+                    return 1; /*error handling, input polynomial of too high degree */
             else
                 deg = 1;
             coeff[deg] = cof;
@@ -214,7 +236,7 @@ int readPoly(int coeff[], int degree)
         token = strtok(NULL, " ");
     }
 
-    return 1;
+    return 0; /* indicates function ran successfully*/
 }
 
 /* Function for printing a given polynomial
@@ -232,12 +254,19 @@ void printPoly(int coeff[], int degree)
 {
     int i;
     int absoluteCoeff;
+    int highestNotZero; /*highest term in polynomial not zero */
     char operator = '+';
-    if (coeff[degree] == 1)
-        printf("x^%d", degree);
+    for(i=degree; i>=0; i--){
+        if (coeff[i] != 0){
+            highestNotZero = i;
+            break;
+        }
+    }
+    if (coeff[highestNotZero] == 1)
+        printf("x^%d", highestNotZero);
     else
-        printf("%dx^%d", coeff[degree], degree);
-    for(i=degree-1; i>-1; i--) {
+        printf("%dx^%d", coeff[highestNotZero], highestNotZero);
+    for(i=highestNotZero-1; i>-1; i--) {
         if (coeff[i] < 0)
             operator = '-';
         else
@@ -248,6 +277,8 @@ void printPoly(int coeff[], int degree)
         else if (absoluteCoeff == 1)
             if (i == 1)
                 printf(" %c x", operator);
+            else if (i == 0)
+                printf(" %c 1", operator);
             else
                 printf(" %c x^%d", operator, i);
         else if (i==1)
@@ -262,7 +293,7 @@ void printPoly(int coeff[], int degree)
 }
 
 
-/* Evalutes a polynomial at a given value for x
+/* Function evalutes a polynomial at a given value for x
 *  by raising that value of x to the degree and
 *  multiplying that by it's corresponding coefficient
 *
@@ -284,7 +315,7 @@ double evalPoly(int *coeff, int degree, double x)
     return sum;
 }
 
-/* function integrates given polynomial between bounds low and high
+/* Function integrates given polynomial between bounds low and high
 *  uses integration formula: sum a[i](v^(i+1)-u^(i+1))/(i+1)
 *  where i is index, v is upper bound, u is lower bound, and
 *  a is coefficient
@@ -308,17 +339,31 @@ double integratePoly(int *coeff, int degree, double low, double high)
     return sum;
 }
 
-/* function header
-*  function multiplies two polynomials together
+/* Function multiplies two polynomials together
 *  function uses nested loops to multiply each term together
-*  and store in correct place in array given by degree
+*  and stores in correct place in array given by degree
+*
+*  PARAMETERS:
+*  int c1[] ---> array of coefficients for first polynomial to multiply
+*  int d1 ---> degree of first polynomial to multiply
+*  int c2[] ---> array of coefficients for second polynomial to multiply
+*  int d2 ---> degree of second polynomial to multiply
+*  int c3[] ---> array to store product polynomial in
+*  int d3 ---> degree of product polynomial
+*  RETURN:
+*  0 or 1 to indicate success or failure respectively
 */
 int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
 {
     int i;
     int j;
-    int deg; //current degree after any given multiplication b/w terms
-    for(i=0; i<=d1; i++) {
+    int deg; /*current degree after any given multiplication b/w terms */
+    if (d1+d2 > d3)
+        return 1; /*error handling, product polynomial of too high degree */
+    for(i=0; i<=d3; i++) {
+        c3[i] = 0;
+    }
+    for(i=0; i<=d1; i++) { /* mutliplies */
         for(j=0; j<=d2; j++) {
             deg = i+j;
             if (c3[deg] == 0)
@@ -327,11 +372,38 @@ int multPoly(int c1[], int d1, int c2[], int d2, int c3[], int d3)
                 c3[deg] += c1[i] * c2[j];
         }
     }
-    return 1;
+    return 0;
 }
 
-/* function header */
+/* Function generates a polynomial based on the roots provided
+*  Uses nested loops to update each term based on next root being multiplied
+*
+*  PARAMETERS:
+*  int c[] ---> array to store generated polynomial in
+*  int d ---> highest degree of generated polynomial
+*  int r[] ---> array of roots to create polynomial from
+*  int n ---> number of roots in polynomial (highest index + 1)
+*  RETURN:
+*  0 or 1 to indicate success or failure respectively
+*/
 int genPoly(int c[], int d, int r[], int n)
 {
-    return 1;
+    int i;
+    int j;
+    int last; /*least significant term coefficient*/
+    if (d < n)
+        return 1; /*error handling, product polynomial of too high degree */
+    for (i=0; i<=d; i++) { /*set all values in new array to zero*/
+        c[i] = 0;
+    }
+    c[1] = 1;
+    c[0] = (-1*r[0]);
+    for (i=1; i<n; i++) { /*foil terms*/
+        last = c[0]*(-1*r[i]);
+        for(j=i; j>=0; j--) {
+            c[j+1] = c[j] + c[j+1]*(-1*r[i]);
+        }
+        c[0] = last;
+    }
+    return 0;
 }
