@@ -1,0 +1,5 @@
+Questions/Uncertainties regarding assignment
+
+
+1. Will the "cancel" function only receive inputs that are at the start of
+    already assigned intervals? (no inputs in the middle of busy intervals?)
