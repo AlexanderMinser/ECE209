@@ -29,8 +29,36 @@ void insertNode(iNode* list, iNode* new) {
     curr->next = new;
 }
 
-void deleteNode(iNode* list, ){
+iNode* deleteNode(iNode* list, Time start){
+    iNode* curr = list;
+    iNode* next;
+    while(curr->next != NULL){ /* ***MAY NOT WORK IF ONLY ONE ITEM IN LIST *** */
+        if (equalTime(curr->next->interval.start, start)) {
+            next = curr->next;
+            curr->next = curr->next->next;
+            return next;
+        }
+    }
+    return NULL; /* means function failed to find specified time slot */
+}
 
+/*assumes time attempting to clear is all already in list
+** (no error checking for user input)
+*/
+void clearTime(iNode* list, Time start, Time end) {
+    iNode* curr = list;
+    iNode* prev = NULL;
+    while(curr != NULL){ /* ***MAY NOT WORK IF ONLY ONE ITEM IN LIST *** */
+        if (equalTime(curr->interval.start, start)) { /* does not account for excess time not reserved *** */
+            prev->next = curr->next;
+            return curr;
+        } else if (lessThanTime(start, curr->interval.end)){
+            curr->interval.end =     
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return NULL; /* means function failed to find specified time slot */
 }
 
 /* merges two adjacent idle times together into one node
@@ -70,6 +98,7 @@ int isBusy(Schedule s, Time start, Time end){
     return 0;
 }
 
+
 int reserve(Schedule s, const char *name, Time start, Time end){
     if (isBusy(s, start, end))
         return 0;
@@ -86,7 +115,8 @@ int reserve(Schedule s, const char *name, Time start, Time end){
 int cancel(Schedule s, const char *name, Time start){
     if (!isBusy(s, start, start)) /*start passed in twice b/c isBusy requires end time, none given*/
         return 0;
-
+    cancelled = deleteNode();
+    insertNode(cancelled);
 
     mergeIdle(s);
     return 1;

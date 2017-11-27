@@ -3,3 +3,11 @@ Questions/Uncertainties regarding assignment
 
 1. Will the "cancel" function only receive inputs that are at the start of
     already assigned intervals? (no inputs in the middle of busy intervals?)
+
+2. Will we ever need to merge "busy" times?
+
+
+
+
+
+(8:00 to 9:00) -> (9:30 to 11:00) -> (11:30 to 1:00)
