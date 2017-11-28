@@ -6,6 +6,10 @@ Questions/Uncertainties regarding assignment
 
 2. Will we ever need to merge "busy" times?
 
+3. createSchedule creates initial idle node?
+
+4. Should we close file after printSchedule?
+
 
 
 

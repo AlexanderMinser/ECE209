@@ -53,7 +53,7 @@ void clearTime(iNode* list, Time start, Time end) {
             prev->next = curr->next;
             return curr;
         } else if (lessThanTime(start, curr->interval.end)){
-            curr->interval.end =     
+            curr->interval.end =
         }
         prev = curr;
         curr = curr->next;
@@ -83,6 +83,17 @@ void mergeIdle(Schedule s) {
 
 /* marks start of assignment-specificed functions*/
 
+Schedule createSchedule(Time start, Time end) {
+    Schedule s = {NULL, NULL, start, end};
+    iNode* idle = (iNode*) malloc(sizeof(iNode));
+    idle->interval.start = start;
+    idle->interval.end = end;
+    s.idle = idle;
+    return s;
+}
+
+
+
 int isBusy(Schedule s, Time start, Time end){
     iNode* currNode = s.busy;
     iData currData;
@@ -105,13 +116,13 @@ int reserve(Schedule s, const char *name, Time start, Time end){
     iNode* new = (iNode*) malloc(sizeof(iNode));
     new->interval.start = start;
     new->interval.end = end;
-    new->interval.owner = memcpy(new->interval.owner, name, NAME_LENGTH+1);
+    new->interval.owner = strcpy(new->interval.owner, name);
 
     insertNode(s.busy, new);
     clearTime(s.idle, start, end);
     return 1;
 }
-
+/* ****REMEMBER TO CLEAR OWNER STRING IN THIS FUNCTION**** */
 int cancel(Schedule s, const char *name, Time start){
     if (!isBusy(s, start, start)) /*start passed in twice b/c isBusy requires end time, none given*/
         return 0;
@@ -120,4 +131,25 @@ int cancel(Schedule s, const char *name, Time start){
 
     mergeIdle(s);
     return 1;
+}
+
+void printSchedule(Schedule s, FILE* stream){
+        iNode* busy = s.busy;
+        iNode* idle = s.idle;
+
+        while(busy != NULL && idle != NULL){
+            if (lessThanTime(busy, idle)) {
+                fprintf(stream, "BUSY %d: ", busy.interval.start.hr);
+                fprintf(stream, "%d - ", busy.interval.start.min);
+                fprintf(stream, "%d:", busy.interval.end.hr);
+                fprintf(stream, "%d ", busy.interval.end.min);
+                fprintf(stream, "%s\n", busy.interval.owner);
+            } else {
+                fprintf(stream, "IDLE %d: ", idle.interval.start.hr);
+                fprintf(stream, "%d - ", idle.interval.start.min);
+                fprintf(stream, "%d:", idle.interval.end.hr);
+                fprintf(stream, "%d ", idle.interval.end.min);
+                fprintf(stream, "%s\n", idle.interval.owner);
+            }
+        }
 }
