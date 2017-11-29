@@ -10,10 +10,10 @@ Questions/Uncertainties regarding assignment
 
 4. Should we close file after printSchedule?
 
+5. Will argument int room in cancelReservation be index or room num (start at 0 or 1)?
 
-Notes:
-
-Schedule is a struct ***pointer***
+6. Is findReservations and printReservations the only functions that use the rNode
+    and reservation structs?
 
 
 
