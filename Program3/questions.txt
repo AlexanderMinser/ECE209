@@ -11,6 +11,11 @@ Questions/Uncertainties regarding assignment
 4. Should we close file after printSchedule?
 
 
+Notes:
+
+Schedule is a struct ***pointer***
+
+
 
 
 
