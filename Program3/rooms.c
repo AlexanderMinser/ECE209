@@ -5,18 +5,36 @@
 */
 
 #include "rooms.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 Schedule* rooms;
 int numberRooms;
 
+/* method for comparing two times
+** returns 1 if t1 > t2, else 0
+** PARAMETERS:
+** t1 --> first time to compare
+** t2 --> second time to compare
+** RETURN: int 1 or 0
+*/
+int lessThanTime(Time t1, Time t2) {
+    if (t1.hr == t2.hr){
+        return (t1.min < t2.min ? 1 : 0);
+    }
+    return (t1.hr < t2.hr ? 1 : 0);
+}
+
 /* test this to see if values are being changed or not, since res is not a pointer */
-void insertRNode(struct rNode* reservations, reservation new){
+void insertRNode(struct rNode* reservations, struct reservation new){
     struct rNode* curr = reservations;
-    while (lessThanTime(curr->res.interval.end, new->res.interval.start)){
+    struct rNode* newNode = (struct rNode*) malloc(sizeof(struct rNode));
+    while (lessThanTime(curr->res.interval->end, new.interval->start)){
         curr = curr->next;
     }
-    new->next = curr->next;
-    curr->next = new;
+    newNode->next = curr->next;
+    curr->next = newNode;
 }
 
 void addReservation(struct rNode* reservations, struct iNode* intervals, const char* name, int roomNum){
@@ -24,7 +42,8 @@ void addReservation(struct rNode* reservations, struct iNode* intervals, const c
     struct reservation new;
     while(curr != NULL){
         if (!strcmp(curr->interval.owner, name)){
-            res = {roomNum, curr->interval};
+            new.roomNumber = roomNum;
+            new.interval = &(curr->interval);
             insertRNode(reservations, new);
         }
         curr = curr->next;
@@ -47,10 +66,23 @@ void setupRooms(int nrooms, Time open, Time close){
     }
 }
 
+/* returns number of rooms in rooms[]
+** PARAMETERS: None
+** RETURN: integer for number of rooms
+*/
 int numRooms(){
     return numberRooms;
 }
 
+/* adds a "reservation" to a specific room by finding the
+** first room in the rooms array that time is open, then adds
+** busy time to that room's schedule
+** PARAMETERS:
+** const char* name --> name of owner of new busy time
+** Time start --> time the reservation will begin
+** Time end --> time the reservation will end
+** RETURN: integer 1 indicating success or 0 for failure
+*/
 int makeReservation(const char* name, Time start, Time end){
     int i;
     int flag;
@@ -66,7 +98,15 @@ int makeReservation(const char* name, Time start, Time end){
     return 0;
 }
 
-
+/* removes a "reservation" from a specific room by finding the
+** specified room in the rooms array, then removing the busy time
+** specified in that room's schedule
+** PARAMETERS:
+** int room ---> index for room array + 1
+** const char* name ---> name of busy time owner to delete
+** Time start ---> time at which busy time for deletion starts
+** RETURN: integer 1 indicating success or 0 for failure
+*/
 int cancelReservation(int room, const char* name, Time start){
     Schedule s = rooms[room-1];
     return cancel(s, name, start);
@@ -74,23 +114,23 @@ int cancelReservation(int room, const char* name, Time start){
 
 struct rNode * findReservations(const char * name){
     int i;
-    struct rNode* reservations;
+    struct rNode* reservations = NULL;
     for(i=0; i<numberRooms; i++) {
-        curr = rooms[i]->busy;
         addReservation(reservations, rooms[i]->busy, name, i+1);
         addReservation(reservations, rooms[i]->idle, name, i+1);
     }
+    return reservations;
 }
 
 void printReservations(const struct rNode* list, FILE* stream){
-    struct rNode* curr = list;
+    struct rNode* curr = (struct rNode*) list;
     while(curr != NULL) {
         fprintf(stream, "ROOM %d: ", curr->res.roomNumber);
         fprintf(stream, "%02d:", curr->res.interval->start.hr);
         fprintf(stream, "%02d - ", curr->res.interval->start.min);
         fprintf(stream, "%02d:", curr->res.interval->end.hr);
         fprintf(stream, "%02d ", curr->res.interval->end.min);
-        fprintf(stream, "%s\n", curr->res.interval.owner);
+        fprintf(stream, "%s\n", curr->res.interval->owner);
 
         curr = curr->next;
     }
