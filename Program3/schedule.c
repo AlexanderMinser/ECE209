@@ -33,32 +33,56 @@ void insertNode(struct iNode* list, struct iNode* new) {
     curr->next = new;
 }
 
-struct iNode* deleteNode(struct iNode* list, Time start){
+iNode* clearBusy(struct iNode* list, Time start) {
     struct iNode* curr = list;
-    struct iNode* next;
-    while(curr->next != NULL){ /* ***MAY NOT WORK IF ONLY ONE ITEM IN LIST *** */
-        if (equalTime(curr->next->interval.start, start)) {
-            next = curr->next;
-            curr->next = curr->next->next;
-            return next;
+    struct iNode* prev = NULL;
+    while(curr != NULL){
+        if (equalTime(curr->interval.start, start)) {
+            if (strcmp(curr->interval.name, name) != 0){
+                /* ?????????? */
+            }
+            else if (prev == NULL){ /* if item is first in list */
+                list = curr->next;
+            } else{
+                prev->next = curr->next;
+            }
+            strcpy(curr->interval.owner, ""); /* clear owner name */
+            return curr;
         }
+        prev = curr;
+        curr = curr->next;
     }
     return NULL; /* means function failed to find specified time slot */
 }
 
-/*assumes time attempting to clear is all already in list
-** (no error checking for user input)
-*/
-void clearTime(struct iNode* list, Time start, Time end) {
+iNode* clearIdle(struct iNode* list, Time start, Time end) {
     struct iNode* curr = list;
     struct iNode* prev = NULL;
-    while(curr != NULL){ /* ***MAY NOT WORK IF ONLY ONE ITEM IN LIST *** */
-        if (equalTime(curr->interval.start, start)) { /* does not account for excess time not reserved *** */
-            prev->next = curr->next;
+    struct iNode* new;
+    Time currStart;
+    Time currEnd;
+    while(curr != NULL){
+        currStart = curr->interval.start;
+        currEnd = curr->interval.end;
+        if (equalTime(currStart, start) && equalTime(currEnd, end)) {
+            if (prev == NULL){
+                /* if item is first in list */
+                list = curr->next;
+            } else{
+                prev->next = curr->next;
+            }
             return curr;
-        } else if (lessThanTime(start, curr->interval.end)){
-            curr->interval.end =
+        } else if (equalTime(currStart, start)){
+            currStart = end;
+            new = malloc(sizeof(iNode*));
+            new->interval.start = start;
+            new->interval.end = end; 
+        } else if (equalTime(currEnd, end)){
+
+        } else if (lessThanTime(currStart, start) && lessThanTime(currEnd, end)){
+
         }
+
         prev = curr;
         curr = curr->next;
     }
@@ -88,11 +112,13 @@ void mergeIdle(Schedule s) {
 /* marks start of assignment-specificed functions*/
 
 Schedule createSchedule(Time start, Time end) {
-    Schedule s = {NULL, NULL, start, end};
+    Schedule s = (Schedule) malloc(sizeof(Schedule));
     struct iNode* idle = (struct iNode*) malloc(sizeof(struct iNode));
     idle->interval.start = start;
     idle->interval.end = end;
     s->idle = idle;
+    s->start = start;
+    s->end = end;
     return s;
 }
 
@@ -103,9 +129,11 @@ int isBusy(Schedule s, Time start, Time end){
     struct iData currData;
     while(currNode != NULL) {
         currData = currNode->interval;
-        if (lessThanTime(currData.start, start) && lessThanTime(start, currData.start)){
+        if (lessThanTime(currData.start, start) && lessThanTime(start, currData.end)){
             return 1;
-        } else if (lessThanTime(currData.end, end) && lessThanTime(end, currData.end)){
+        } else if (lessThanTime(currData.start, end) && lessThanTime(end, currData.end)){
+            return 1;
+        } else if (lessThanTime(currData.start, start) && lessThanTime(end, currData.end)){
             return 1;
         }
         currNode = currNode->next;
@@ -113,7 +141,10 @@ int isBusy(Schedule s, Time start, Time end){
     return 0;
 }
 
-
+/* what if user wants to reserve a time where there is a reservation in
+** the middle? Ex. tries to reserve 2:00-4:00 and there is reservation
+** from 2:30 - 3:30???
+*/
 int reserve(Schedule s, const char *name, Time start, Time end){
     if (isBusy(s, start, end))
         return 0;
@@ -123,16 +154,20 @@ int reserve(Schedule s, const char *name, Time start, Time end){
     strcpy(new->interval.owner, name);
 
     insertNode(s->busy, new);
-    clearTime(s->idle, start, end);
+    free(clearIdle(s->idle, start, end)); /* may not work if func returns NULL */
+    mergeIdle();
     return 1;
 }
-/* ****REMEMBER TO CLEAR OWNER STRING IN THIS FUNCTION**** */
-int cancel(Schedule s, const char *name, Time start){
-    if (!isBusy(s, start, start)) /*start passed in twice b/c isBusy requires end time, none given*/
-        return 0;
-    struct iNode* cancelled = deleteNode();
-    insertNode(s->idle, cancelled);
 
+/* could there be instance where start time is same, but name is different
+** ex. trying to cancel a reservation at a time where the room is reserved,
+** but a different person reserved it?
+*/
+int cancel(Schedule s, const char *name, Time start){
+    struct iNode* cancelled = clearBusy(s, start, start);
+    if (cancelled == NULL)
+        return 0;
+    insertNode(s->idle, cancelled);
     mergeIdle(s);
     return 1;
 }
