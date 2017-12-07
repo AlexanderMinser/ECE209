@@ -2,6 +2,8 @@
 ** ECE 209 Fall 2017
 ** 11/26/2017
 ** schedule.c
+** Run my code in EOS I suppose? Ths was tested on Ubuntu Linux so whichever
+** environment is closest to that please.
 */
 
 
@@ -10,7 +12,12 @@
 #include <string.h>
 #include "schedule.h"
 
-
+/* compares two times, returning 1 if t1 < t2, else 0
+** PARAMETERS:
+** Time t1 ---> first time to be compared
+** Time t2 ---> second time to be compared
+** RETURN: integer indicating true/false
+*/
 int lessThanTime(Time t1, Time t2) {
     if (t1.hr == t2.hr){
         return (t1.min < t2.min ? 1 : 0);
@@ -18,31 +25,89 @@ int lessThanTime(Time t1, Time t2) {
     return (t1.hr < t2.hr ? 1 : 0);
 }
 
+/* compares two times, returning 1 if t1 <= t2, else 0
+** PARAMETERS:
+** Time t1 ---> first time to be compared
+** Time t2 ---> second time to be compared
+** RETURN: integer indicating true/false
+*/
+int lessThanEqualTime(Time t1, Time t2) {
+    if (t1.hr == t2.hr){
+        return (t1.min <= t2.min ? 1 : 0);
+    }
+    return (t1.hr <= t2.hr ? 1 : 0);
+}
+
+/* compares two times, returning 1 if t1 == t2, else 0
+** PARAMETERS:
+** Time t1 ---> first time to be compared
+** Time t2 ---> second time to be compared
+** RETURN: integer indicating true/false
+*/
 int equalTime(Time t1, Time t2) {
     if ((t1.hr == t2.hr) && (t1.min == t2.min))
         return 1;
     return 0;
 }
 
-void insertNode(struct iNode* list, struct iNode* new) {
-    struct iNode* curr = list;
-    while (lessThanTime(curr->interval.end, new->interval.start)){
-        curr = curr->next;
+/* inserts a node into an iNode* list */
+void insertNode(Schedule s, struct iNode* list, struct iNode* new, int useBusy) {
+    new->next = NULL;
+    struct iNode temp;
+    if (list == NULL){ /* list empty */
+        if (useBusy)
+            s->busy = new;
+        else
+            s->idle = new;
+    } else if (lessThanEqualTime(new->interval.end, list->interval.start)){
+        /* first item in list */
+        temp.interval = list->interval;
+        list->interval = new->interval;
+        new->interval = temp.interval;
+        new->next = list->next;
+        list->next = new;
+    } else { /* step through until find correct place */
+        struct iNode* curr = list;
+        while (curr->next != NULL && lessThanEqualTime(curr->next->interval.start, new->interval.start)){
+            curr = curr->next;
+        }
+        new->next = curr->next;
+        curr->next = new;
     }
-    new->next = curr->next;
-    curr->next = new;
 }
 
-iNode* clearBusy(struct iNode* list, Time start) {
+/* checks to see if room is open during time requested for reservation */
+int notOpen(Schedule s, Time start, Time end){
+    if (lessThanTime(start, s->start))
+        return 1;
+    else if (lessThanTime(s->end, end))
+        return 1;
+    else
+        return 0;
+}
+
+/* allocates new iNode* and assigns times to it*/
+struct iNode* buildInterval(Time start, Time end) {
+    struct iNode* new = (struct iNode*) malloc(sizeof(struct iNode));
+    new->interval.start = start;
+    new->interval.end = end;
+    return new;
+}
+
+/* removes time slot from busy list by finding specific reserved time
+** and removing from list
+** PARAMETERS:
+** struct iNode* list ---> busy list to remove node from
+** Time start ---> start of busy time to be removed
+** RETURN: node with correct reservation removed or NULL if not found
+*/
+struct iNode* clearBusy(Schedule s, struct iNode* list, Time start, const char* name) {
     struct iNode* curr = list;
     struct iNode* prev = NULL;
     while(curr != NULL){
-        if (equalTime(curr->interval.start, start)) {
-            if (strcmp(curr->interval.name, name) != 0){
-                /* ?????????? */
-            }
-            else if (prev == NULL){ /* if item is first in list */
-                list = curr->next;
+        if (equalTime(curr->interval.start, start) && !strcmp(curr->interval.owner, name)) {
+            if (prev == NULL){ /* if item is first in list */
+                s->busy = curr->next;
             } else{
                 prev->next = curr->next;
             }
@@ -55,38 +120,59 @@ iNode* clearBusy(struct iNode* list, Time start) {
     return NULL; /* means function failed to find specified time slot */
 }
 
-iNode* clearIdle(struct iNode* list, Time start, Time end) {
+/* removes a time slot from idle list by adjusting existing nodes
+** for time slot being reserved
+** PARAMETERS:
+** struct iNode* list ---> idle linked list to edit
+** Time start ---> start of busy time to be removed
+** Time end ---> end of busy time to be removed
+** RETURN: node with appropriate times removed from list or NULL if not found
+*/
+struct iNode* clearIdle(Schedule s, struct iNode* list, Time start, Time end) {
     struct iNode* curr = list;
     struct iNode* prev = NULL;
     struct iNode* new;
-    Time currStart;
-    Time currEnd;
+    struct iNode* temp;
+    Time* currStart;
+    Time* currEnd;
     while(curr != NULL){
-        currStart = curr->interval.start;
-        currEnd = curr->interval.end;
-        if (equalTime(currStart, start) && equalTime(currEnd, end)) {
-            if (prev == NULL){
+        currStart = &(curr->interval.start);
+        currEnd = &(curr->interval.end);
+        if (equalTime(*currStart, start) && equalTime(*currEnd, end)) {
+            if (prev == NULL)
                 /* if item is first in list */
-                list = curr->next;
-            } else{
+                s->idle = curr->next;
+             else
                 prev->next = curr->next;
-            }
             return curr;
-        } else if (equalTime(currStart, start)){
-            currStart = end;
-            new = malloc(sizeof(iNode*));
-            new->interval.start = start;
-            new->interval.end = end; 
-        } else if (equalTime(currEnd, end)){
-
-        } else if (lessThanTime(currStart, start) && lessThanTime(currEnd, end)){
-
+        } else if (equalTime(*currStart, start)){
+            *currStart = end;
+            return buildInterval(start, end);
+        } else if (equalTime(*currEnd, end)){
+            *currEnd = start;
+            return buildInterval(start, end);
+        } else if (lessThanTime(*currStart, start) && lessThanTime(end, *currEnd)){
+            new = buildInterval(end, *currEnd);
+            *currEnd = start;
+            new->next = curr->next;
+            curr->next = new;
+            temp = buildInterval(start, end);
+            return temp;
         }
-
         prev = curr;
         curr = curr->next;
     }
     return NULL; /* means function failed to find specified time slot */
+}
+
+/* function used for testing, prints out all times in a iNode list */
+void printNodes(struct iNode* list) {
+    struct iNode* curr = list;
+    while(curr != NULL){
+        printf("%02d:%02d", curr->interval.start.hr, curr->interval.start.min);
+        printf("-%02d:%02d\n", curr->interval.end.hr, curr->interval.end.min);
+        curr = curr->next;
+    }
 }
 
 /* merges two adjacent idle times together into one node
@@ -97,13 +183,19 @@ iNode* clearIdle(struct iNode* list, Time start, Time end) {
 void mergeIdle(Schedule s) {
     struct iNode* curr = s->idle;
     struct iNode* next;
+    if (curr == NULL) /* nothing to merge */
+        return;
     while(curr->next != NULL) {
-        if (equalTime(curr->interval.end, curr->next->interval.start)){
+        while (equalTime(curr->interval.end, curr->next->interval.start)){
             next = curr->next;
             curr->interval.end = next->interval.end;
             curr->next = next->next;
             free(next);
+            if (curr->next == NULL)
+                break;
         }
+        if (curr->next == NULL)
+            break;
         curr = curr->next;
     }
 }
@@ -111,6 +203,13 @@ void mergeIdle(Schedule s) {
 
 /* marks start of assignment-specificed functions*/
 
+/* initilizes schedule with one idle node spanning from start to end
+** specified by parameters
+** PARAMETERS:
+** Time start ---> start time of schedule
+** Time end ---> end time of schedule
+** RETURN: initialized schedule
+*/
 Schedule createSchedule(Time start, Time end) {
     Schedule s = (Schedule) malloc(sizeof(Schedule));
     struct iNode* idle = (struct iNode*) malloc(sizeof(struct iNode));
@@ -123,17 +222,27 @@ Schedule createSchedule(Time start, Time end) {
 }
 
 
-
+/* checks to see if specific time is found in shcedule by comparing
+** given times to each busy list time
+** PARAMETERS:
+** Schedule s ---> schedule to see if time is busy
+** Time start ---> start time of interval to look for
+** Time end ---> end time of interval to look for
+** RETURN: 1 or 0 indicating busy or free respectively
+** returns 1 if start or end time given is between start and end time of any
+** interval or start and end time are less than and greater than any interval
+** respectively
+*/
 int isBusy(Schedule s, Time start, Time end){
     struct iNode* currNode = s->busy;
     struct iData currData;
     while(currNode != NULL) {
         currData = currNode->interval;
-        if (lessThanTime(currData.start, start) && lessThanTime(start, currData.end)){
+        if (lessThanEqualTime(currData.start, start) && lessThanTime(start, currData.end)){
             return 1;
-        } else if (lessThanTime(currData.start, end) && lessThanTime(end, currData.end)){
+        } else if (lessThanTime(currData.start, end) && lessThanEqualTime(end, currData.end)){
             return 1;
-        } else if (lessThanTime(currData.start, start) && lessThanTime(end, currData.end)){
+        } else if (lessThanEqualTime(start, currData.start) && lessThanEqualTime(currData.end, end)){
             return 1;
         }
         currNode = currNode->next;
@@ -141,54 +250,57 @@ int isBusy(Schedule s, Time start, Time end){
     return 0;
 }
 
-/* what if user wants to reserve a time where there is a reservation in
-** the middle? Ex. tries to reserve 2:00-4:00 and there is reservation
-** from 2:30 - 3:30???
-*/
+/* makes a reservation for time and name provided (busy list) */
 int reserve(Schedule s, const char *name, Time start, Time end){
     if (isBusy(s, start, end))
         return 0;
-    struct iNode* new = (struct iNode*) malloc(sizeof(struct iNode));
-    new->interval.start = start;
-    new->interval.end = end;
+    else if (notOpen(s, start, end))
+        return 0;
+    struct iNode* new = clearIdle(s, s->idle, start, end);
     strcpy(new->interval.owner, name);
 
-    insertNode(s->busy, new);
-    free(clearIdle(s->idle, start, end)); /* may not work if func returns NULL */
-    mergeIdle();
-    return 1;
+    insertNode(s, s->busy, new, 1);
+    mergeIdle(s);
+    return 1; /* indicates success */
 }
 
-/* could there be instance where start time is same, but name is different
-** ex. trying to cancel a reservation at a time where the room is reserved,
-** but a different person reserved it?
+/* removes a busy time from the busy list of schedule and adds it to the
+** idle times list
+** PARAMETERS:
+** Schedule s ---> schedule with time to rearrange
+** const char* name ---> name of busy time owner to change
+** Time start ---> start time for busy time to put in idle list
+** RETURN: 1 or 0 indicating success or failure respectively
 */
 int cancel(Schedule s, const char *name, Time start){
-    struct iNode* cancelled = clearBusy(s, start, start);
+    struct iNode* cancelled = clearBusy(s, s->busy, start, name);
     if (cancelled == NULL)
         return 0;
-    insertNode(s->idle, cancelled);
+    insertNode(s, s->idle, cancelled, 0);
     mergeIdle(s);
     return 1;
 }
 
+/* prints schedule */
 void printSchedule(Schedule s, FILE* stream){
         struct iNode* busy = s->busy;
         struct iNode* idle = s->idle;
 
-        while(busy != NULL && idle != NULL){
-            if (lessThanTime(busy->interval.start, idle->interval.start)) {
-                fprintf(stream, "BUSY %d: ", busy->interval.start.hr);
-                fprintf(stream, "%d - ", busy->interval.start.min);
-                fprintf(stream, "%d:", busy->interval.end.hr);
-                fprintf(stream, "%d ", busy->interval.end.min);
+        while(busy != NULL || idle != NULL){
+            if (busy != NULL && lessThanTime(busy->interval.start, idle->interval.start)) {
+                fprintf(stream, "BUSY %02d:", busy->interval.start.hr);
+                fprintf(stream, "%02d - ", busy->interval.start.min);
+                fprintf(stream, "%02d:", busy->interval.end.hr);
+                fprintf(stream, "%02d ", busy->interval.end.min);
                 fprintf(stream, "%s\n", busy->interval.owner);
-            } else {
-                fprintf(stream, "IDLE %d: ", idle->interval.start.hr);
-                fprintf(stream, "%d - ", idle->interval.start.min);
-                fprintf(stream, "%d:", idle->interval.end.hr);
-                fprintf(stream, "%d ", idle->interval.end.min);
+                busy = busy->next;
+            } else if (idle != NULL){
+                fprintf(stream, "IDLE %02d:", idle->interval.start.hr);
+                fprintf(stream, "%02d - ", idle->interval.start.min);
+                fprintf(stream, "%02d:", idle->interval.end.hr);
+                fprintf(stream, "%02d ", idle->interval.end.min);
                 fprintf(stream, "%s\n", idle->interval.owner);
+                idle = idle->next;
             }
         }
 }
